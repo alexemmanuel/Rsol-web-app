@@ -21,6 +21,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden; /* Prevents cat from breaking the page width */
         }
 
         header {
@@ -30,6 +31,7 @@
             text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             margin-bottom: 30px;
+            z-index: 10;
         }
 
         header h1 {
@@ -52,6 +54,8 @@
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 40px;
+            z-index: 10;
+            position: relative;
         }
 
         .card {
@@ -101,9 +105,15 @@
             text-transform: uppercase;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: white;
             color: var(--rsol-red);
+        }
+        
+        button:disabled {
+            background-color: #777;
+            border-color: #555;
+            cursor: not-allowed;
         }
 
         .output-section {
@@ -140,6 +150,17 @@
             font-weight: 500;
         }
 
+        /* The RSOL Cat CSS */
+        #rsol-cat {
+            position: fixed;
+            top: 0;
+            left: 0;
+            font-size: 3rem;
+            z-index: 1; /* Behind the main container portal */
+            pointer-events: none; /* So it doesn't interrupt clicks */
+            transition: transform 1.5s ease-in-out;
+        }
+
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 1fr;
@@ -148,6 +169,8 @@
     </style>
 </head>
 <body>
+
+    <div id="rsol-cat">🐈</div>
 
     <header>
         <h1>$RSOL Hub</h1>
@@ -158,7 +181,7 @@
         <div class="card">
             <h2>Single Post Generator</h2>
             <p>Generate a high-impact image concept and caption to raid the timeline.</p>
-            <button onclick="generateSinglePost()">Generate Content & Caption</button>
+            <button id="btn-single" onclick="generateSinglePost()">Generate Content & Caption</button>
             <div id="single-output" class="output-section">
                 </div>
         </div>
@@ -168,14 +191,58 @@
             <p>Need multiple posts for a campaign? Generate up to 10 at once.</p>
             <label for="postCount">Number of contents (Max 10):</label>
             <input type="number" id="postCount" min="1" max="10" value="3">
-            <button onclick="generateBatchPosts()">Auto-Generate Batch</button>
+            <button id="btn-batch" onclick="generateBatchPosts()">Auto-Generate Batch</button>
             <div id="batch-output" class="output-section">
                 </div>
         </div>
     </div>
 
     <script>
-        // Fierce, community-driven captions matching the Lioness vibe
+        // --- CAT LOGIC ---
+        const catElement = document.getElementById('rsol-cat');
+        let isGenerating = false;
+        let catInterval;
+
+        function moveCat() {
+            if (isGenerating) return; // Stop moving if generating
+            
+            // Calculate safe roaming boundaries
+            const maxX = window.innerWidth - 70;
+            const maxY = window.innerHeight - 70;
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+            
+            catElement.style.transform = `translate(${randomX}px, ${randomY}px)`;
+        }
+
+        function sitCatForGeneration() {
+            isGenerating = true;
+            catElement.innerText = "🐈‍⬛"; // Changes appearance to show it is sitting/waiting
+            
+            // Send the cat to a far corner away from the generation portal
+            const corners = [
+                {x: 20, y: 20}, // Top Left
+                {x: window.innerWidth - 80, y: 20}, // Top Right
+                {x: 20, y: window.innerHeight - 80}, // Bottom Left
+                {x: window.innerWidth - 80, y: window.innerHeight - 80} // Bottom Right
+            ];
+            const randomCorner = corners[Math.floor(Math.random() * corners.length)];
+            
+            catElement.style.transform = `translate(${randomCorner.x}px, ${randomCorner.y}px)`;
+        }
+
+        function resumeCatMovement() {
+            isGenerating = false;
+            catElement.innerText = "🐈"; // Back to roaming mode
+            moveCat(); // Immediate move
+        }
+
+        // Start cat roaming every 2 seconds
+        catInterval = setInterval(moveCat, 2000);
+        moveCat(); // Initial placement
+
+
+        // --- GENERATOR LOGIC ---
         const captions = [
             "The pride is moving. If you aren't paying attention to $RSOL, you're missing the takeover. 🦁🔴 #Crypto #RSOL",
             "Fierce, relentless, and built for the long haul. $RSOL is not just a token, it's a movement. 🔥💎",
@@ -189,8 +256,6 @@
             "Energy matched. Vision aligned. The $RSOL takeover is inevitable. Let's make some noise! 📢🔴"
         ];
 
-        // Simulated image concepts / placeholders for a content generator
-        // In a real production app, you would connect this to an AI image API (like DALL-E or Midjourney)
         const imageConcepts = [
             "https://via.placeholder.com/400x200/9a0007/ffffff?text=Majestic+Cyber+Lioness+Roaring",
             "https://via.placeholder.com/400x200/d32f2f/ffffff?text=Glowing+Gold+$RSOL+Coin",
@@ -216,28 +281,49 @@
 
         function generateSinglePost() {
             const outputDiv = document.getElementById('single-output');
-            outputDiv.innerHTML = createPostHTML();
+            const btn = document.getElementById('btn-single');
+            
+            // Trigger Cat Sitting and Button State
+            sitCatForGeneration();
+            btn.disabled = true;
+            btn.innerText = "Generating...";
+            
+            // Simulate generation delay (1.5 seconds) so you can see the cat wait
+            setTimeout(() => {
+                outputDiv.innerHTML = createPostHTML();
+                btn.disabled = false;
+                btn.innerText = "Generate Content & Caption";
+                resumeCatMovement();
+            }, 1500);
         }
 
         function generateBatchPosts() {
             const countInput = document.getElementById('postCount');
             const outputDiv = document.getElementById('batch-output');
+            const btn = document.getElementById('btn-batch');
             
             let count = parseInt(countInput.value);
-            
-            // Validation: Keep it between 1 and 10
             if (isNaN(count) || count < 1) count = 1;
             if (count > 10) count = 10;
-            
-            // Ensure the input field reflects the clamped value
             countInput.value = count;
 
-            let postsHTML = '';
-            for (let i = 0; i < count; i++) {
-                postsHTML += createPostHTML();
-            }
+            // Trigger Cat Sitting and Button State
+            sitCatForGeneration();
+            btn.disabled = true;
+            btn.innerText = "Batching...";
 
-            outputDiv.innerHTML = postsHTML;
+            // Simulate generation delay
+            setTimeout(() => {
+                let postsHTML = '';
+                for (let i = 0; i < count; i++) {
+                    postsHTML += createPostHTML();
+                }
+                outputDiv.innerHTML = postsHTML;
+                
+                btn.disabled = false;
+                btn.innerText = "Auto-Generate Batch";
+                resumeCatMovement();
+            }, 1500);
         }
     </script>
 </body>
