@@ -21,7 +21,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-x: hidden; /* Prevents cat from breaking the page width */
+            overflow-x: hidden;
         }
 
         header {
@@ -150,15 +150,16 @@
             font-weight: 500;
         }
 
-        /* The RSOL Cat CSS */
+        /* The FAT RSOL Cat CSS */
         #rsol-cat {
             position: fixed;
             top: 0;
             left: 0;
-            font-size: 3rem;
+            font-size: 6rem; /* Increased size for the 'Fat Cat' look */
             z-index: 1; /* Behind the main container portal */
             pointer-events: none; /* So it doesn't interrupt clicks */
-            transition: transform 1.5s ease-in-out;
+            transition: transform 3s linear; /* Smooth, steady walking pace */
+            filter: drop-shadow(0px 10px 5px rgba(0,0,0,0.5)); /* Adds weight visually */
         }
 
         @media (max-width: 768px) {
@@ -206,13 +207,21 @@
         function moveCat() {
             if (isGenerating) return; // Stop moving if generating
             
-            // Calculate safe roaming boundaries
-            const maxX = window.innerWidth - 70;
-            const maxY = window.innerHeight - 70;
+            // Calculate safe roaming boundaries for a bigger cat
+            const maxX = window.innerWidth - 120;
+            const maxY = window.innerHeight - 120;
             const randomX = Math.floor(Math.random() * maxX);
             const randomY = Math.floor(Math.random() * maxY);
             
-            catElement.style.transform = `translate(${randomX}px, ${randomY}px)`;
+            // Flip the cat depending on which direction it walks (left or right)
+            const currentTransform = catElement.style.transform;
+            let scaleX = 1;
+            if (currentTransform) {
+                const currentX = parseInt(currentTransform.split('translate(')[1]);
+                if (randomX < currentX) scaleX = -1; // Walk left
+            }
+
+            catElement.style.transform = `translate(${randomX}px, ${randomY}px) scaleX(${scaleX})`;
         }
 
         function sitCatForGeneration() {
@@ -222,9 +231,9 @@
             // Send the cat to a far corner away from the generation portal
             const corners = [
                 {x: 20, y: 20}, // Top Left
-                {x: window.innerWidth - 80, y: 20}, // Top Right
-                {x: 20, y: window.innerHeight - 80}, // Bottom Left
-                {x: window.innerWidth - 80, y: window.innerHeight - 80} // Bottom Right
+                {x: window.innerWidth - 120, y: 20}, // Top Right
+                {x: 20, y: window.innerHeight - 120}, // Bottom Left
+                {x: window.innerWidth - 120, y: window.innerHeight - 120} // Bottom Right
             ];
             const randomCorner = corners[Math.floor(Math.random() * corners.length)];
             
@@ -237,8 +246,8 @@
             moveCat(); // Immediate move
         }
 
-        // Start cat roaming every 2 seconds
-        catInterval = setInterval(moveCat, 2000);
+        // Start cat walking every 3 seconds for a slower, heavier pace
+        catInterval = setInterval(moveCat, 3000);
         moveCat(); // Initial placement
 
 
